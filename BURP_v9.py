@@ -21,6 +21,8 @@ from tkinter import ttk, filedialog, messagebox
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Border, Side
+from openpyxl.utils import get_column_letter
+from copy import copy
 
 import pandas as pd
 import numpy as np
@@ -61,6 +63,20 @@ class MonthlyReportingTool(tk.Tk):
         
     def create_widgets(self):
         '''
+        Create variables to configure the output format
+        '''
+        self.language_EN = tk.IntVar(value=0)
+
+        self.Standard_B = tk.IntVar(value=0)
+        self.Availability_B = tk.IntVar(value=0)
+        self.Energy_B = tk.IntVar(value=0)
+
+        self.Standard_C = tk.IntVar(value=0)
+        self.Availability_C = tk.IntVar(value=0)
+        self.Energy_C = tk.IntVar(value=0)
+
+        self.Slip_BvsC = tk.IntVar(value=0)
+        '''
         Instantiates the lay out of the GUI
         '''
         
@@ -77,33 +93,66 @@ class MonthlyReportingTool(tk.Tk):
             'H4242 - Delfland De Groote Lucht',
             'PR000041 - Dieckmann'
             )
-        site_select['state'] = 'readonly'
+        #site_select['state'] = 'readonly'
         site_select.current()
         site_select.grid(row = 1, column = 2, padx = 5, pady = 25)
         
-        select_file_button = ttk.Button(self, text='Open File', command=self.select_file)
-        select_file_button.grid(row = 2, column = 1, padx = 5, pady = 25)
+        label_language = ttk.Label(self, text="Select Box for English:", font=("Calibri", 10))
+        label_language.grid(row = 2, column = 1, padx = 5, pady = 25)
+
+        language_EN_box = ttk.Checkbutton(self, text='', variable=self.language_EN)
+        language_EN_box.grid(row = 2, column = 2, padx = 5, pady = 25)
+
+        label_B_Options = ttk.Label(self, text="Select Export options Upgrader:", font=("Calibri", 10))
+        label_B_Options.grid(row = 3, column = 1, padx = 5, pady = 25)
+
+        B_Standard_box = ttk.Checkbutton(self, text='Standard', variable=self.Standard_B)
+        B_Standard_box.grid(row = 3, column = 2, padx = 5, pady = 25)
+
+        B_Availability_box = ttk.Checkbutton(self, text='Availability', variable=self.Availability_B)
+        B_Availability_box.grid(row = 3, column = 3, padx = 5, pady = 25)
+
+        B_Energy_box = ttk.Checkbutton(self, text='Energy', variable=self.Energy_B)
+        B_Energy_box.grid(row = 3, column = 4, padx = 5, pady = 25)
+
+        label_C_Options = ttk.Label(self, text="Select Export options Liquefaction:", font=("Calibri", 10))
+        label_C_Options.grid(row = 4, column = 1, padx = 5, pady = 25)
+
+        C_Standard_box = ttk.Checkbutton(self, text='Standard', variable=self.Standard_C)
+        C_Standard_box.grid(row = 4, column = 2, padx = 5, pady = 25)
+
+        C_Availability_box = ttk.Checkbutton(self, text='Availability', variable=self.Availability_C)
+        C_Availability_box.grid(row = 4, column = 3, padx = 5, pady = 25)
+
+        C_Energy_box = ttk.Checkbutton(self, text='Energy', variable=self.Energy_C)
+        C_Energy_box.grid(row = 4, column = 4, padx = 5, pady = 25)
+
+        Slip_BvsC_box = ttk.Checkbutton(self, text='Slip Biogas vs Liquefaction', variable=self.Slip_BvsC)
+        Slip_BvsC_box.grid(row = 4, column = 5, padx = 5, pady = 25)
+
+        select_file_button = ttk.Button(self, text='Data File', command=self.select_file)
+        select_file_button.grid(row = 5, column = 1, padx = 5, pady = 25)
         
         show_open_file = ttk.Label(self, textvariable=self.file_location_var, font=("Calibri", 10))
-        show_open_file.grid(row = 2, column = 2, padx = 5, pady = 25)
+        show_open_file.grid(row = 5, column = 2, padx = 5, pady = 25)
         
-        select_folder_button = ttk.Button(self, text='Open folder', command=self.select_folder)
-        select_folder_button.grid(row = 3, column=1, padx = 5, pady = 25)
+        select_folder_button = ttk.Button(self, text='Destination folder', command=self.select_folder)
+        select_folder_button.grid(row = 6, column=1, padx = 5, pady = 25)
         
         show_open_folder = ttk.Label(self, textvariable=self.folder_location_var, font=("Calibri", 10))
-        show_open_folder.grid(row = 3, column=2, padx = 5, pady = 25)
+        show_open_folder.grid(row = 6, column=2, padx = 5, pady = 25)
         
         '''Starts the generation of the report, initially disabled'''
-        self.start_button.grid(row=4, column=1, padx = 5, pady=25)
+        self.start_button.grid(row = 7, column=1, padx = 5, pady=25)
         self.start_button.config(state=tk.DISABLED)
         
         '''Resets the input fields to empty'''
         reset_button = ttk.Button(self, text="Reset", command=self.reset)
-        reset_button.grid(row=4, column=2, pady=25)
+        reset_button.grid(row=7, column=2, pady=25)
         
         '''stops the program'''
         cancel_button = ttk.Button(self, text="Cancel", command=self.destroy)
-        cancel_button.grid(row=4, column=3, padx = 25, pady=25)
+        cancel_button.grid(row=7, column=3, padx = 25, pady=25)
         
         '''Updates the state of variables to enable start button'''
         self.site_var.trace("w", lambda *args: self.update_start_button_state())
@@ -131,6 +180,7 @@ class MonthlyReportingTool(tk.Tk):
         self.start_button.config(state=tk.NORMAL if site_selected and file_selected and folder_selected else tk.DISABLED)
     
     def reset(self):
+        print(self.language_EN.get())
         self.site_var.set('')
         self.file_location_var.set('')
         self.folder_location_var.set('')
@@ -147,7 +197,7 @@ class MonthlyReportingTool(tk.Tk):
         
         report_generator = StandardizedReport(self.site_var.get(), self.file_location_var.get(), self.folder_location_var.get())
         
-        report_export = ExportToExcel(report_generator)
+        report_export = ExportToExcel(report_generator,self.language_EN.get(),self.Standard_B.get(),self.Availability_B.get(),self.Energy_B.get(),self.Standard_C.get(),self.Availability_C.get(),self.Energy_C.get(),self.Slip_BvsC.get())
 
         pass
 
@@ -344,10 +394,17 @@ class StandardizedReport:
 
 class ExportToExcel:
     
-    def __init__(self, StandardizedReport):
+    def __init__(self, StandardizedReport, language_EN, B_Standard, B_Availability, B_Energy, C_Standard, C_Availability, C_Energy, Slip):
         
         self.exd = StandardizedReport # exd = external data, shortened for ease of use
         
+        self.Language_EN = language_EN
+
+        available_templates = {"B_Standard": B_Standard, "B_Availability": B_Availability,"B_Energy":B_Energy,"C_Standard":C_Standard, "C_Availability": C_Availability, "C_Energy": C_Energy, "Slip": Slip}
+        selected_templates = [os.getcwd()+f"/BaseFiles/{key}_{language_EN}.xlsx" for key, value in available_templates.items() if value == 1]
+        self.template_files = selected_templates
+        print(selected_templates)
+
         if self.exd.site == 'B0175 - Aquafin NV':
             self.print_template_1()
             
@@ -368,10 +425,125 @@ class ExportToExcel:
             
         elif self.exd.site == 'PR000041 - Dieckmann':
             self.print_template_4()
+
+        elif self.exd.site == 'test':
+            self.build_final_excel()
             
         else:
             messagebox.showinfo('Information', 'Report failure')
+
+    def copy_block(self,source_ws, target_ws, start_row, start_col):
+        """Copy a block of data from source worksheet to target worksheet at a specific row and column."""
+        max_row = source_ws.max_row
+        max_col = source_ws.max_column
+    
+        for row in range(1, max_row + 1):
+            for col in range(1, max_col + 1):
+                source_cell = source_ws.cell(row=row, column=col)
+                target_cell = target_ws.cell(row=start_row + row - 1, column=start_col + col - 1)
+                
+                # Copy value
+                target_cell.value = source_cell.value
+                
+                # Copy style attributes safely
+                if source_cell.has_style:
+                    target_cell.font = copy(source_cell.font)
+                    target_cell.border = copy(source_cell.border)
+                    target_cell.fill = copy(source_cell.fill)
+                    target_cell.number_format = source_cell.number_format
+                    target_cell.protection = copy(source_cell.protection)
+                    target_cell.alignment = copy(source_cell.alignment)
+        
+        return max_row, max_col  # Return dimensions of the copied block
+
+    def build_final_excel(self):
+        """Builds the final Excel file by arranging blocks in a grid format."""
+        nvt = lambda x: x if isinstance(x, str) else round(x, 2)
+
+        final_wb = load_workbook(filename =  os.getcwd()+f'/BaseFiles/0Header_{self.Language_EN}.xlsx')
+        final_ws = final_wb.active
+
+        final_ws['C4'] = self.exd.site
+        final_ws['C5'] = self.exd.period
+        final_ws['C6'] = f'{date.today()}'
+                
+        current_row = 10
+        current_col = 2
+        max_row_in_grid = 10  # Keeps track of row height in the current grid row
+        
+        for template in self.template_files:
+            wb = load_workbook(template)
+            ws = wb.active  # Assume data is in the first sheet
+
+            # Fill the partial template with the appropriate data
+            if "B_Standard" in template:
+                ws['B2'] = round(self.exd.biogas,1)
+                ws['B3'] = round(self.exd.biogas_CH4,1)
+
+                ws['B6'] = round(self.exd.biomethane,1)
+                ws['B7'] = round(self.exd.biomethane_CH4,1)
+
+                ws['B9'] = round(self.exd.capacity)
+                ws['B10'] = nvt(self.exd.methane_slip)
+
+            if "B_Availability" in template:
+                ws['B2'] = self.exd.running
+                ws['B3'] = self.exd.standby
+                ws['B4'] = '='+str(self.exd.trip)+'-G14-G15-G16'
+                ws['B5'] = 0
+                ws['B6'] = 0
+                ws['B7'] = 0
+                ws['B8'] = '=100*(1-((G13+G14+G15+G16)/(G11+G12+G13+G14+G15+G16)))'
+                
+            # Copy the block to the final worksheet    
+
+            block_rows, block_cols = ws.max_row, ws.max_column
             
+            # Check if the block fits in the current row
+            if current_col + block_cols > 9:  # 1 + 7 columns + 1 for spacing
+                current_row += 1  # Move to next grid row
+                current_col = 2
+                max_row_in_grid = 10
+            self.copy_block(ws, final_ws, current_row, current_col)
+            max_row_in_grid = max(max_row_in_grid, block_rows)
+            
+            # Update column position for next block
+            current_col += block_cols + 1  # Add spacing column
+            block_rows, block_cols = ws.max_row, ws.max_column
+            
+        wb1 = load_workbook(filename =  os.getcwd()+f'/BaseFiles/1_Triplist_{self.Language_EN}.xlsx')
+        ws1 = wb1.active  # Assume data is in the first sheet
+
+        current_col = 2
+        current_row = final_ws.max_row +2
+        self.copy_block(ws1, final_ws, current_row, current_col)
+
+        skip = final_ws.max_row +1  
+
+        for i in range(skip,skip+len(self.exd.error_list)):
+            final_ws.insert_rows(idx = i)
+            ws.merge_cells(start_row=i, start_column=4, end_row=i, end_column=6)
+            thin = Side(border_style="thin", color="000000")
+            final_ws.cell(row = i, column = 2).border = Border(left = thin)
+            final_ws.cell(row = i, column = 8).border = Border(right = thin)
+            final_ws.cell(row = i, column = 2, value = self.exd.error_list['Date'][i-skip].strftime('%Y-%m-%d %H:%M'))
+            final_ws.cell(row = i, column = 3, value = math.ceil(100*self.exd.error_list['Duration'][i-skip].total_seconds()/60/60)/100)
+            final_ws.cell(row = i, column = 7, value = self.exd.error_list['endDate'][i-skip].strftime('%Y-%m-%d'))
+
+        max_row_in_grid = skip+len(self.exd.error_list)
+
+        wb2 = load_workbook(filename =  os.getcwd()+f'/BaseFiles/2_Closing_{self.Language_EN}.xlsx')
+        ws2 = wb2.active  # Assume data is in the first sheet
+
+        current_col = 2
+        current_row = final_ws.max_row +2
+        self.copy_block(ws2, final_ws, current_row, current_col)
+
+        final_wb.save(filename = self.exd.folder_location+'/'+self.exd.site+' - maandrapportage bedrijfsvoering '+self.exd.save_period+'.xlsx')
+        
+        messagebox.showinfo('Information', 'Report for '+self.exd.period+' '+self.exd.site+' was created')
+
+
     def print_template_1(self):
         
         skip = 26
