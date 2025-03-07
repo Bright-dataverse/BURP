@@ -76,6 +76,9 @@ class MonthlyReportingTool(tk.Tk):
         self.Energy_C = tk.IntVar(value=0)
 
         self.Slip_BvsC = tk.IntVar(value=0)
+        self.Energy_BnC = tk.IntVar(value=0)
+        self.Heatpump = tk.IntVar(value=0)
+        self.Energy_BnC_HP = tk.IntVar(value=0)
         '''
         Instantiates the lay out of the GUI
         '''
@@ -127,32 +130,44 @@ class MonthlyReportingTool(tk.Tk):
         C_Energy_box = ttk.Checkbutton(self, text='Energy', variable=self.Energy_C)
         C_Energy_box.grid(row = 4, column = 4, padx = 5, pady = 25)
 
+        label_BnC_Options = ttk.Label(self, text="Select Export options Combined installations:", font=("Calibri", 10))
+        label_BnC_Options.grid(row = 5, column = 1, padx = 5, pady = 25)
+
         Slip_BvsC_box = ttk.Checkbutton(self, text='Slip Biogas vs Liquefaction', variable=self.Slip_BvsC)
-        Slip_BvsC_box.grid(row = 4, column = 5, padx = 5, pady = 25)
+        Slip_BvsC_box.grid(row = 5, column = 2, padx = 5, pady = 25)
+
+        BnC_Energy_box = ttk.Checkbutton(self, text='Energy', variable=self.Energy_BnC)
+        BnC_Energy_box.grid(row = 5, column = 3, padx = 5, pady = 25)
+
+        Heatpump_box = ttk.Checkbutton(self, text='Heatpump', variable=self.Heatpump)
+        Heatpump_box.grid(row = 5, column = 4, padx = 5, pady = 25)
+
+        Energy_BnC_HP_box = ttk.Checkbutton(self, text='Energy Heatpump', variable=self.Energy_BnC_HP)
+        Energy_BnC_HP_box.grid(row = 5, column = 8, padx = 5, pady = 25)
 
         select_file_button = ttk.Button(self, text='Data File', command=self.select_file)
-        select_file_button.grid(row = 5, column = 1, padx = 5, pady = 25)
+        select_file_button.grid(row = 6, column = 1, padx = 5, pady = 25)
         
         show_open_file = ttk.Label(self, textvariable=self.file_location_var, font=("Calibri", 10))
-        show_open_file.grid(row = 5, column = 2, padx = 5, pady = 25)
+        show_open_file.grid(row = 6, column = 2, padx = 5, pady = 25)
         
         select_folder_button = ttk.Button(self, text='Destination folder', command=self.select_folder)
-        select_folder_button.grid(row = 6, column=1, padx = 5, pady = 25)
+        select_folder_button.grid(row = 7, column=1, padx = 5, pady = 25)
         
         show_open_folder = ttk.Label(self, textvariable=self.folder_location_var, font=("Calibri", 10))
-        show_open_folder.grid(row = 6, column=2, padx = 5, pady = 25)
+        show_open_folder.grid(row = 7, column=2, padx = 5, pady = 25)
         
         '''Starts the generation of the report, initially disabled'''
-        self.start_button.grid(row = 7, column=1, padx = 5, pady=25)
+        self.start_button.grid(row = 8, column=1, padx = 5, pady=25)
         self.start_button.config(state=tk.DISABLED)
         
         '''Resets the input fields to empty'''
         reset_button = ttk.Button(self, text="Reset", command=self.reset)
-        reset_button.grid(row=7, column=2, pady=25)
+        reset_button.grid(row=8, column=2, pady=25)
         
         '''stops the program'''
         cancel_button = ttk.Button(self, text="Cancel", command=self.destroy)
-        cancel_button.grid(row=7, column=3, padx = 25, pady=25)
+        cancel_button.grid(row=8, column=3, padx = 25, pady=25)
         
         '''Updates the state of variables to enable start button'''
         self.site_var.trace("w", lambda *args: self.update_start_button_state())
@@ -197,7 +212,7 @@ class MonthlyReportingTool(tk.Tk):
         
         report_generator = StandardizedReport(self.site_var.get(), self.file_location_var.get(), self.folder_location_var.get())
         
-        report_export = ExportToExcel(report_generator,self.language_EN.get(),self.Standard_B.get(),self.Availability_B.get(),self.Energy_B.get(),self.Standard_C.get(),self.Availability_C.get(),self.Energy_C.get(),self.Slip_BvsC.get())
+        report_export = ExportToExcel(report_generator,self.language_EN.get(),self.Standard_B.get(),self.Availability_B.get(),self.Energy_B.get(),self.Standard_C.get(),self.Availability_C.get(),self.Energy_C.get(),self.Slip_BvsC.get(),self.Energy_BnC.get(),self.Heatpump.get(),self.Energy_BnC_HP.get())
 
         pass
 
@@ -394,43 +409,16 @@ class StandardizedReport:
 
 class ExportToExcel:
     
-    def __init__(self, StandardizedReport, language_EN, B_Standard, B_Availability, B_Energy, C_Standard, C_Availability, C_Energy, Slip):
+    def __init__(self, StandardizedReport, language_EN, B_Standard, B_Availability, B_Energy, C_Standard, C_Availability, C_Energy, Slip, Energy_BnC, Heatpump, Energy_BnC_HP):
         
         self.exd = StandardizedReport # exd = external data, shortened for ease of use
         
         self.Language_EN = language_EN
 
-        available_templates = {"B_Standard": B_Standard, "B_Availability": B_Availability,"B_Energy":B_Energy,"C_Standard":C_Standard, "C_Availability": C_Availability, "C_Energy": C_Energy, "Slip": Slip}
+        available_templates = {"B_Standard": B_Standard,"C_Standard":C_Standard, "B_Availability": B_Availability,"C_Availability": C_Availability, "Slip": Slip,"B_Energy":B_Energy,"C_Energy": C_Energy,"BnC_Energy":Energy_BnC,"Heatpump":Heatpump,"EnergyHeatpump":Energy_BnC_HP}
         selected_templates = [os.getcwd()+f"/BaseFiles/{key}_{language_EN}.xlsx" for key, value in available_templates.items() if value == 1]
         self.template_files = selected_templates
-        print(selected_templates)
-
-        if self.exd.site == 'B0175 - Aquafin NV':
-            self.print_template_1()
-            
-        elif self.exd.site == 'B0218 - Delfland Harnaschpolder':
-            self.print_template_1()
-            
-        elif self.exd.site == 'H4242 - Delfland De Groote Lucht':
-            self.print_template_1()
-            
-        elif self.exd.site == 'H4187 - Twence':
-            self.print_template_1()
-            
-        elif self.exd.site == 'B0565 - Delfland Houtrust':
-            self.print_template_2()
-            
-        elif self.exd.site == 'B0933 - Dommel':
-            self.print_template_3()
-            
-        elif self.exd.site == 'PR000041 - Dieckmann':
-            self.print_template_4()
-
-        elif self.exd.site == 'test':
-            self.build_final_excel()
-            
-        else:
-            messagebox.showinfo('Information', 'Report failure')
+        self.build_final_excel()
 
     def copy_block(self,source_ws, target_ws, start_row, start_col):
         """Copy a block of data from source worksheet to target worksheet at a specific row and column."""
@@ -494,14 +482,50 @@ class ExportToExcel:
                 ws['B6'] = 0
                 ws['B7'] = 0
                 ws['B8'] = '=100*(1-((G13+G14+G15+G16)/(G11+G12+G13+G14+G15+G16)))'
+
+            if "C_Availability" in template:
+                ws['B2'] = self.exd.running_CO2LIQ
+                ws['B3'] = self.exd.standby_CO2LIQ
+                ws['B4'] = '='+str(self.exd.trip_CO2LIQ)+'-G18-G19-G20'
+                ws['B5'] = 0
+                ws['B6'] = 0
+                ws['B7'] = 0
+                ws['B8'] = '=100*(1-((G17+G18+G19+G20)/(G15+G16+G17+G18+G19+G20)))'
+
+            if "Heatpump" in template:
+                ws['B2'] = self.exd.running_heatpump
+                ws['B3'] = self.exd.standby_heatpump
+                ws['B4'] = self.exd.trip_heatpump
+                ws['B5'] = '=100*(1-(G24/(G22+G23+G24)))'
+
+            if "EnergyHeatpump" in template:
+                ws['B2'] = self.exd.total_energy
+                ws['B3'] = self.exd.total_energy_HP
+                ws['B4'] = self.exd.total_energy_CO2
                 
+                ws['F2'] = 1000*self.exd.total_energy/self.exd.biogas
+                ws['F3'] = 1000*self.exd.total_energy_HP/self.exd.biogas
+                ws['F4'] = 1000*self.exd.total_energy_CO2/self.exd.biogas
+
+            if "Slip" in template:
+                ws['B2'] = round(self.exd.methane_slip,2)
+                ws['F2'] = self.exd.methane_slip_CO2LIQ_active
+
+            if "B_Energy" in template:
+                ws['B2'] = self.exd.total_energy
+                ws['B3'] = 1000*self.exd.total_energy/self.exd.biogas
+
+            if "C_Energy" in template:	
+                ws['B2'] = self.exd.total_energy_CO2/1000000
+                ws['B3'] = self.exd.total_energy_CO2/self.exd.biogas/1000
+                        
             # Copy the block to the final worksheet    
 
             block_rows, block_cols = ws.max_row, ws.max_column
             
             # Check if the block fits in the current row
             if current_col + block_cols > 9:  # 1 + 7 columns + 1 for spacing
-                current_row += 1  # Move to next grid row
+                current_row = final_ws.max_row + 2  # Move to next grid row
                 current_col = 2
                 max_row_in_grid = 10
             self.copy_block(ws, final_ws, current_row, current_col)
@@ -509,8 +533,7 @@ class ExportToExcel:
             
             # Update column position for next block
             current_col += block_cols + 1  # Add spacing column
-            block_rows, block_cols = ws.max_row, ws.max_column
-            
+
         wb1 = load_workbook(filename =  os.getcwd()+f'/BaseFiles/1_Triplist_{self.Language_EN}.xlsx')
         ws1 = wb1.active  # Assume data is in the first sheet
 
@@ -543,210 +566,14 @@ class ExportToExcel:
         
         messagebox.showinfo('Information', 'Report for '+self.exd.period+' '+self.exd.site+' was created')
 
-
-    def print_template_1(self):
-        
-        skip = 26
-        
-        nvt = lambda x: x if isinstance(x, str) else round(x, 2)                # Lambda function to keep overall code short
-        
-        wb = load_workbook(filename =  os.getcwd()+'/BaseFiles/Template_1.xlsx')
-        ws = wb.worksheets[0]
-
-        ws['C4'] = self.exd.site
-        ws['C5'] = self.exd.period
-        ws['C6'] = date.today()
-
-        ws['C11'] = round(self.exd.biogas,1)
-        ws['C12'] = round(self.exd.biogas_CH4,1)
-        ws['C15'] = round(self.exd.biomethane,1)
-        ws['C16'] = round(self.exd.biomethane_CH4,1)
-
-        ws['C18'] = round(self.exd.capacity)
-        ws['C19'] = nvt(self.exd.methane_slip)
-
-        ws['G11'] = self.exd.running
-        ws['G12'] = self.exd.standby
-        ws['G13'] = '='+str(self.exd.trip)+'-G14-G15-G16'
-        ws['G14'] = 0
-        ws['G15'] = 0
-        ws['G16'] = 0
-        ws['G17'] = '=100*(1-((G13+G14+G15+G16)/(G11+G12+G13+G14+G15+G16)))'
-        
-        for i in range(skip,skip+len(self.exd.error_list)):
-            ws.insert_rows(idx = i)
-            ws.merge_cells(start_row=i, start_column=4, end_row=i, end_column=6)
-            thin = Side(border_style="thin", color="000000")
-            ws.cell(row = i, column = 2).border = Border(left = thin)
-            ws.cell(row = i, column = 8).border = Border(right = thin)
-            ws.cell(row = i, column = 2, value = self.exd.error_list['Date'][i-skip].strftime('%Y-%m-%d %H:%M'))
-            ws.cell(row = i, column = 3, value = math.ceil(100*self.exd.error_list['Duration'][i-skip].total_seconds()/60/60)/100)
-            ws.cell(row = i, column = 7, value = self.exd.error_list['endDate'][i-skip].strftime('%Y-%m-%d'))
-
-        wb.save(filename = self.exd.folder_location+'/'+self.exd.site+' - maandrapportage bedrijfsvoering '+self.exd.save_period+'.xlsx')
-        
-        messagebox.showinfo('Information', 'Report for '+self.exd.period+' '+self.exd.site+' was created')
-
-    def print_template_2(self):
-        
-        skip = 38
-        
-        wb = load_workbook(filename = os.getcwd()+'/BaseFiles/Template_2.xlsx')
-        ws = wb.worksheets[0]
-
-        ws['C4'] = self.exd.site
-        ws['C5'] = self.exd.period
-        ws['C6'] = date.today()
-
-        ws['C11'] = round(self.exd.biogas,1)
-        ws['C12'] = round(self.exd.biogas_CH4,1)
-        ws['C15'] = round(self.exd.biomethane,1)
-        ws['C16'] = round(self.exd.biomethane_CH4,1)
-
-        ws['C18'] = round(self.exd.capacity)
-        ws['C19'] = round(self.exd.methane_slip,2)
-
-        ws['G11'] = self.exd.running
-        ws['G12'] = self.exd.standby
-        ws['G13'] = '='+str(self.exd.trip)+'-G14-G15-G16'
-        ws['G14'] = 0
-        ws['G15'] = 0
-        ws['G16'] = 0
-        ws['G17'] = '=100*(1-((G13+G14+G15+G16)/(G11+G12+G13+G14+G15+G16)))'
-        
+        '''
         ws['C22'] = self.exd.running_CO2LIQ
         ws['C23'] = self.exd.standby_CO2LIQ
         ws['C24'] = self.exd.trip_CO2LIQ
         ws['C26'] = '=100*(1-(C24/(C22+C23+C24)))'
-        
-        ws['G22'] = self.exd.running_heatpump
-        ws['G23'] = self.exd.standby_heatpump
-        ws['G24'] = self.exd.trip_heatpump
-        ws['G26'] = '=100*(1-(G24/(G22+G23+G24)))'
-        
-        ws['C29'] = self.exd.total_energy
-        ws['C30'] = self.exd.total_energy_HP
-        ws['C31'] = self.exd.total_energy_CO2
-        
-        ws['G29'] = 1000*self.exd.total_energy/self.exd.biogas
-        ws['G30'] = 1000*self.exd.total_energy_HP/self.exd.biogas
-        ws['G31'] = 1000*self.exd.total_energy_CO2/self.exd.biogas
-        
-        for i in range(skip,skip+len(self.exd.error_list)):
-            ws.insert_rows(idx = i)
-            ws.merge_cells(start_row=i, start_column=4, end_row=i, end_column=6)
-            thin = Side(border_style="thin", color="000000")
-            ws.cell(row = i, column = 2).border = Border(left = thin)
-            ws.cell(row = i, column = 8).border = Border(right = thin)
-            ws.cell(row = i, column = 2, value = self.exd.error_list['Date'][i-skip].strftime('%Y-%m-%d %H:%M'))
-            ws.cell(row = i, column = 3, value = math.ceil(100*self.exd.error_list['Duration'][i-skip].total_seconds()/60/60)/100)
-            ws.cell(row = i, column = 7, value = self.exd.error_list['endDate'][i-skip].strftime('%Y-%m-%d'))
 
-        wb.save(filename = self.exd.folder_location+'/'+self.exd.site+' - maandrapportage bedrijfsvoering '+self.exd.save_period+'.xlsx')
-        
-        messagebox.showinfo('Information', 'Report for '+self.exd.period+' '+self.exd.site+' was created')
-        
-    def print_template_3(self):
-        
-        skip = 32+4
-        
-        wb = load_workbook(filename = os.getcwd()+'/BaseFiles/Template_3.xlsx')
-        ws = wb.worksheets[0]
-
-        ws['C4'] = self.exd.site                                                # Project
-        ws['C5'] = self.exd.period                                              # Month
-        ws['C6'] = date.today()                                                 # Date of today
-
-        ws['C11'] = self.exd.biogas                                             # Produced amount of biogas
-        ws['C12'] = '=('+str(self.exd.mean_H2S_treated)+'/17)*C11'              # Weighed biogas treated with 17 ppm H2S
-        ws['G11'] = 0
-        ws['G12'] = '=(G11/50)*C11'
-
-        ws['C15'] = self.exd.running                                            # Running Hours
-        ws['C16'] = self.exd.standby
-        ws['C17'] = '='+str(self.exd.trip)+'-C18-C19-C20'
-        ws['C18'] = 0
-        ws['C19'] = 0
-        ws['C20'] = 0
-        ws['C21'] = '=100*(1-((C17+C18+C19+C20)/(C15+C16+C17+C18+C19+C120)))'
-        
-        ws['C25'] = round(self.exd.methane_slip,2)
-        
-        ws['C28'] = self.exd.total_energy
-        ws['C29'] = 1000*self.exd.total_energy/self.exd.biogas
-
-        ws['G15'] = self.exd.running_CO2LIQ
-        ws['G16'] = self.exd.standby_CO2LIQ
-        ws['G17'] = '='+str(self.exd.trip_CO2LIQ)+'-G18-G19-G20'
-        ws['G18'] = 0
-        ws['G19'] = 0
-        ws['G20'] = 0
-        ws['G21'] = '=100*(1-((G17+G18+G19+G20)/(G15+G16+G17+G18+G19+G20)))'
-        
-        ws['G25'] = self.exd.methane_slip_CO2LIQ_active
-        ws['G28'] = self.exd.total_energy_CO2/1000000
-        ws['G29'] = self.exd.total_energy_CO2/self.exd.biogas/1000
-                        
-        for i in range(skip,skip+len(self.exd.error_list)):
-            ws.insert_rows(idx = i)
-            ws.merge_cells(start_row=i, start_column=4, end_row=i, end_column=6)
-            thin = Side(border_style="thin", color="000000")
-            ws.cell(row = i, column = 2).border = Border(left = thin)
-            ws.cell(row = i, column = 8).border = Border(right = thin)
-            ws.cell(row = i, column = 2, value = self.exd.error_list['Date'][i-skip].strftime('%Y-%m-%d %H:%M'))
-            ws.cell(row = i, column = 3, value = math.ceil(100*self.exd.error_list['Duration'][i-skip].total_seconds()/60/60)/100)
-            ws.cell(row = i, column = 7, value = self.exd.error_list['endDate'][i-skip].strftime('%Y-%m-%d'))
-
-        wb.save(filename = self.exd.folder_location+'/'+self.exd.site+' - maandrapportage bedrijfsvoering '+self.exd.save_period+'.xlsx')
-        
-        messagebox.showinfo('Information', 'Report for '+self.exd.period+' '+self.exd.site+' was created')
-        
-    def print_template_4(self):
-        
-        skip = 30
-        
-        wb = load_workbook(filename = os.getcwd()+'/BaseFiles/Template_4.xlsx')
-        ws = wb.worksheets[0]
-
-        ws['C4'] = self.exd.site                                                # Project
-        ws['C5'] = self.exd.period                                              # Month
-        ws['C6'] = date.today()                                                 # Date of today
-
-        ws['C11'] = round(self.exd.biogas,1)                                             # Produced amount of biogas
-        ws['C12'] = round(self.exd.biogas_CH4,1)
-        ws['G11'] = round(self.exd.biomethane)
-        ws['G12'] = round(self.exd.biomethane_CH4)
-
-        ws['C15'] = self.exd.running                                            # Running Hours
-        ws['C16'] = self.exd.standby
-        ws['C17'] = '='+str(self.exd.trip)+'-C18-C19-C20'
-        ws['C18'] = 0
-        ws['C19'] = 0
-        ws['C20'] = 0
-        ws['C21'] = '=100*(1-((C17+C18+C19+C20)/(C15+C16+C17+C18+C19+C120)))'
-
-        ws['G15'] = self.exd.running_CO2LIQ
-        ws['G16'] = self.exd.standby_CO2LIQ
-        ws['G17'] = '='+str(self.exd.trip_CO2LIQ)+'-G18-G19-G20'
-        ws['G18'] = 0
-        ws['G19'] = 0
-        ws['G20'] = 0
-        ws['G21'] = '=100*(1-((G17+G18+G19+G20)/(G15+G16+G17+G18+G19+G20)))'
-                                
-        for i in range(skip,skip+len(self.exd.error_list)):
-            ws.insert_rows(idx = i)
-            ws.merge_cells(start_row=i, start_column=4, end_row=i, end_column=6)
-            thin = Side(border_style="thin", color="000000")
-            ws.cell(row = i, column = 2).border = Border(left = thin)
-            ws.cell(row = i, column = 8).border = Border(right = thin)
-            ws.cell(row = i, column = 2, value = self.exd.error_list['Date'][i-skip].strftime('%Y-%m-%d %H:%M'))
-            ws.cell(row = i, column = 3, value = math.ceil(100*self.exd.error_list['Duration'][i-skip].total_seconds()/60/60)/100)
-            ws.cell(row = i, column = 7, value = self.exd.error_list['endDate'][i-skip].strftime('%Y-%m-%d'))
-
-        wb.save(filename = self.exd.folder_location+'/'+self.exd.site+' - maandrapportage bedrijfsvoering '+self.exd.save_period+'.xlsx')
-        
-        messagebox.showinfo('Information', 'Report for '+self.exd.period+' '+self.exd.site+' was created')
-
+        template 2 short CO2 availability
+        '''
 '''This starts up an instance of our application'''
 
 def main():
